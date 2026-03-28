@@ -1,0 +1,24 @@
+{
+  "name": "@xtrstudios/sdk",
+  "version": "1.0.0",
+  "description": "Official  SDK for XtrStudios Platform",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build"
+  },
+  "keywords": ["xtrstudios", "sdk", "streaming", "api"],
+  "author": "XtrStudios",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/node": "^20.12.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
