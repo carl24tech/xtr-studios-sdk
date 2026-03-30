@@ -8,12 +8,17 @@ class DatabaseClient {
         this.http = http;
     }
     async query(options) {
-        const response = await this.http.post(this.http.buildUrl(constants_1.ENDPOINTS.database.query), options);
-        return response.data;
+        try {
+            const response = await this.http.post(this.http.buildUrl(constants_1.ENDPOINTS.database.query), options);
+            return response.data;
+        }
+        catch (error) {
+            throw new Error(`Database query failed: ${error.message}`);
+        }
     }
     async findOne(table, where) {
         const result = await this.query({ table, where, limit: 1 });
-        return result.rows[0] ?? null;
+        return result?.rows?.[0] ?? null;
     }
     async findById(table, id) {
         return this.findOne(table, [{ field: "id", operator: "eq", value: id }]);
@@ -23,13 +28,17 @@ class DatabaseClient {
         return response.data;
     }
     async insertOne(table, data) {
+        if (!table || !data) {
+            throw new Error("Table and data are required for insertOne");
+        }
         const results = await this.insert({
             table,
             data: data,
             returning: ["*"],
         });
-        if (results.length === 0)
+        if (!results || results.length === 0) {
             throw new Error("Insert returned no data");
+        }
         return results[0];
     }
     async update(payload) {
@@ -43,13 +52,16 @@ class DatabaseClient {
             where: [{ field: "id", operator: "eq", value: id }],
             returning: ["*"],
         });
-        return results[0] ?? null;
+        return results?.[0] ?? null;
     }
     async delete(payload) {
         const response = await this.http.post(this.http.buildUrl(constants_1.ENDPOINTS.database.delete), payload);
         return response.data.deleted;
     }
     async deleteById(table, id) {
+        if (!table || id === undefined || id === null) {
+            return false;
+        }
         const deleted = await this.delete({
             table,
             where: [{ field: "id", operator: "eq", value: id }],
@@ -57,8 +69,21 @@ class DatabaseClient {
         return deleted > 0;
     }
     async batch(operations) {
+        if (!operations || operations.length === 0) {
+            return [];
+        }
+        const CHUNK_SIZE = 100;
+        if (operations.length > CHUNK_SIZE) {
+            const results = [];
+            for (let i = 0; i < operations.length; i += CHUNK_SIZE) {
+                const chunk = operations.slice(i, i + CHUNK_SIZE);
+                const response = await this.http.post(this.http.buildUrl(constants_1.ENDPOINTS.database.batch), { operations: chunk });
+                results.push(...(response.data || []));
+            }
+            return results;
+        }
         const response = await this.http.post(this.http.buildUrl(constants_1.ENDPOINTS.database.batch), { operations });
-        return response.data;
+        return response.data || [];
     }
     async count(table, where) {
         const result = await this.query({
@@ -67,8 +92,9 @@ class DatabaseClient {
             where,
             limit: 1,
         });
-        const row = result.rows[0];
-        return Number(row?.count ?? 0);
+        const row = result?.rows?.[0];
+        const count = row?.count !== undefined ? Number(row.count) : row?.COUNT !== undefined ? Number(row.COUNT) : 0;
+        return isNaN(count) ? 0 : count;
     }
     async exists(table, where) {
         const count = await this.count(table, where);
@@ -85,4 +111,3 @@ exports.DatabaseClient = DatabaseClient;
 function createDatabaseClient(http) {
     return new DatabaseClient(http);
 }
-//# sourceMappingURL=index.js.map
