@@ -16,20 +16,31 @@ export class Router {
   private registeredRoutes: Map<string, RouteDefinition> = new Map();
 
   constructor(client: HttpClient) {
+    if (!client) {
+      throw new Error("HttpClient is required");
+    }
     this.client = client;
   }
 
   register(name: string, definition: RouteDefinition): this {
+    if (!name || !definition) {
+      throw new Error("Route name and definition are required");
+    }
+    if (!definition.path || !definition.method) {
+      throw new Error(`Route "${name}" missing required path or method`);
+    }
     this.registeredRoutes.set(name, definition);
     return this;
   }
 
   deregister(name: string): this {
+    if (!name) return this;
     this.registeredRoutes.delete(name);
     return this;
   }
 
   getRegistered(name: string): RouteDefinition | undefined {
+    if (!name) return undefined;
     return this.registeredRoutes.get(name);
   }
 
@@ -42,15 +53,23 @@ export class Router {
     pathParams?: RouteParams,
     queryParams?: QueryParams
   ): string {
+    if (!path) {
+      throw new Error("Path is required");
+    }
+    
     const resolvedPath = pathParams ? interpolatePath(path, pathParams) : path;
     const filteredQuery: Record<string, unknown> = {};
+    
     if (queryParams) {
       Object.entries(queryParams).forEach(([k, v]) => {
-        if (v !== undefined) filteredQuery[k] = v;
+        if (v !== undefined && v !== null) filteredQuery[k] = v;
       });
     }
+    
     const qs = Object.keys(filteredQuery).length > 0 ? buildQueryString(filteredQuery) : "";
-    return `${this.client.getBaseUrl()}${resolvedPath}${qs}`;
+    const baseUrl = this.client.getBaseUrl() || "";
+    
+    return `${baseUrl}${resolvedPath}${qs}`;
   }
 
   async call<T>(
@@ -59,14 +78,25 @@ export class Router {
     queryParams?: QueryParams,
     body?: unknown
   ): Promise<T> {
+    if (!name) {
+      throw new Error("Route name is required");
+    }
+    
     const route = this.registeredRoutes.get(name);
-    if (!route) throw new Error(`Route "${name}" is not registered`);
-    const url = this.resolve(route.path, pathParams, queryParams);
-    const response = await this.client.request<T>(url, {
-      method: route.method,
-      body,
-    });
-    return response.data;
+    if (!route) {
+      throw new Error(`Route "${name}" is not registered`);
+    }
+    
+    try {
+      const url = this.resolve(route.path, pathParams, queryParams);
+      const response = await this.client.request<T>(url, {
+        method: route.method,
+        body,
+      });
+      return response.data;
+    } catch (error) {
+      throw new Error(`Failed to call route "${name}": ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 }
 
@@ -79,12 +109,16 @@ export class RouteBuilder {
     handler: string,
     options: { middleware?: string[]; auth?: boolean } = {}
   ): this {
+    if (!path || !method || !handler) {
+      throw new Error("Path, method, and handler are required");
+    }
+    
     this.routes.push({
       path,
       method,
       handler,
       middleware: options.middleware,
-      auth: options.auth,
+      auth: options.auth ?? false,
     });
     return this;
   }
@@ -115,53 +149,57 @@ export class RouteBuilder {
 }
 
 export function defaultRoutes(client: HttpClient): Router {
+  if (!client) {
+    throw new Error("HttpClient is required");
+  }
+  
   const router = new Router(client);
 
-  const allRoutes = [
-    ...Object.entries(ENDPOINTS.movies).map(([handler, path]) => ({
-      path,
+  const allRoutes: RouteDefinition[] = [
+    ...Object.entries(ENDPOINTS.movies || {}).map(([handler, path]) => ({
+      path: path as string,
       method: "GET" as HttpMethod,
       handler: `movies.${handler}`,
       auth: false,
     })),
-    ...Object.entries(ENDPOINTS.series).map(([handler, path]) => ({
-      path,
+    ...Object.entries(ENDPOINTS.series || {}).map(([handler, path]) => ({
+      path: path as string,
       method: "GET" as HttpMethod,
       handler: `series.${handler}`,
       auth: false,
     })),
-    ...Object.entries(ENDPOINTS.stream).map(([handler, path]) => ({
-      path,
+    ...Object.entries(ENDPOINTS.stream || {}).map(([handler, path]) => ({
+      path: path as string,
       method: "GET" as HttpMethod,
       handler: `stream.${handler}`,
       auth: true,
     })),
     {
-      path: ENDPOINTS.auth.login,
+      path: ENDPOINTS.auth?.login || "/auth/login",
       method: "POST" as HttpMethod,
       handler: "auth.login",
       auth: false,
     },
     {
-      path: ENDPOINTS.auth.register,
+      path: ENDPOINTS.auth?.register || "/auth/register",
       method: "POST" as HttpMethod,
       handler: "auth.register",
       auth: false,
     },
     {
-      path: ENDPOINTS.auth.logout,
+      path: ENDPOINTS.auth?.logout || "/auth/logout",
       method: "POST" as HttpMethod,
       handler: "auth.logout",
       auth: true,
     },
     {
-      path: ENDPOINTS.auth.refresh,
+      path: ENDPOINTS.auth?.refresh || "/auth/refresh",
       method: "POST" as HttpMethod,
       handler: "auth.refresh",
       auth: true,
     },
     {
-      path: ENDPOINTS.auth.me,
+      path: ENDPOINTS.auth?.me || "/auth/me",
       method: "GET" as HttpMethod,
       handler: "auth.me",
       auth: true,
@@ -176,3 +214,4 @@ export function defaultRoutes(client: HttpClient): Router {
 }
 
 export { ENDPOINTS, BASE_URL };
+export type { RouteDefinition, HttpMethod };
