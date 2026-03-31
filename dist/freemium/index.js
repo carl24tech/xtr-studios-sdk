@@ -124,3 +124,4 @@ exports.FreemiumClient = FreemiumClient;
 function createFreemiumClient(http) {
     return new FreemiumClient(http);
 }
+//# sourceMappingURL=index.js.map
