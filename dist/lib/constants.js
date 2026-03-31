@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.QUALITY_LEVELS = exports.MEDIA_FORMATS = exports.HTTP_STATUS = exports.ENDPOINTS = exports.SDK_USER_AGENT = exports.SDK_VERSION = exports.DEFAULT_RETRY_DELAY = exports.DEFAULT_RETRIES = exports.DEFAULT_TIMEOUT = exports.API_VERSION = exports.BASE_URL = void 0;
+
 exports.BASE_URL = "https://www.xtrstudios.site";
 exports.API_VERSION = "v1";
 exports.DEFAULT_TIMEOUT = 30000;
@@ -8,6 +9,7 @@ exports.DEFAULT_RETRIES = 3;
 exports.DEFAULT_RETRY_DELAY = 1000;
 exports.SDK_VERSION = "1.0.0";
 exports.SDK_USER_AGENT = `XtrStudios-SDK/${exports.SDK_VERSION} (TypeScript)`;
+
 exports.ENDPOINTS = {
     stream: {
         movie: "/api/stream/movie",
@@ -66,6 +68,8 @@ exports.ENDPOINTS = {
         features: "/api/framework/features",
         health: "/api/framework/health",
         version: "/api/framework/version",
+        environment: "/api/framework/environment",
+        plugins: "/api/framework/plugins",
     },
     xtrstudios: {
         info: "/api/xtrstudios/info",
@@ -80,6 +84,7 @@ exports.ENDPOINTS = {
         latest: "/api/xtrsoftwares/latest",
     },
 };
+
 exports.HTTP_STATUS = {
     OK: 200,
     CREATED: 201,
@@ -91,16 +96,17 @@ exports.HTTP_STATUS = {
     RATE_LIMITED: 429,
     SERVER_ERROR: 500,
 };
+
 exports.MEDIA_FORMATS = {
     HLS: "hls",
     MP4: "mp4",
     DASH: "dash",
     WEBM: "webm",
 };
+
 exports.QUALITY_LEVELS = {
     SD: "480p",
     HD: "720p",
     FHD: "1080p",
     UHD: "4K",
 };
-//# sourceMappingURL=constants.js.map
