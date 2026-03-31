@@ -77,20 +77,28 @@ export class DatabaseClient {
   private readonly http: HttpClient;
 
   constructor(http: HttpClient) {
+    if (!http) {
+      throw new Error("HttpClient is required");
+    }
     this.http = http;
   }
 
   async query<T extends DatabaseRecord = DatabaseRecord>(
     options: QueryOptions
   ): Promise<QueryResult<T>> {
+    if (!options || !options.table) {
+      throw new Error("Query options with table name are required");
+    }
+
     try {
       const response = await this.http.post<QueryResult<T>>(
         this.http.buildUrl(ENDPOINTS.database.query),
         options
       );
-      return response.data;
+      return response.data || { rows: [], count: 0, has_more: false };
     } catch (error) {
-      throw new Error(`Database query failed: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Database query failed: ${message}`);
     }
   }
 
@@ -98,11 +106,16 @@ export class DatabaseClient {
     table: string,
     where: FilterClause[]
   ): Promise<T | null> {
-    if (!table || !where) {
+    if (!table || !where || where.length === 0) {
       return null;
     }
-    const result = await this.query<T>({ table, where, limit: 1 });
-    return result?.rows?.[0] ?? null;
+
+    try {
+      const result = await this.query<T>({ table, where, limit: 1 });
+      return result?.rows?.[0] || null;
+    } catch (error) {
+      return null;
+    }
   }
 
   async findById<T extends DatabaseRecord = DatabaseRecord>(
@@ -118,6 +131,10 @@ export class DatabaseClient {
   async insert<T extends DatabaseRecord = DatabaseRecord>(
     payload: InsertPayload
   ): Promise<T[]> {
+    if (!payload || !payload.table || !payload.data) {
+      throw new Error("Insert payload with table and data is required");
+    }
+
     try {
       const response = await this.http.post<T[]>(
         this.http.buildUrl(ENDPOINTS.database.insert),
@@ -125,7 +142,8 @@ export class DatabaseClient {
       );
       return response.data || [];
     } catch (error) {
-      throw new Error(`Database insert failed: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Database insert failed: ${message}`);
     }
   }
 
@@ -136,20 +154,27 @@ export class DatabaseClient {
     if (!table || !data) {
       throw new Error("Table and data are required for insertOne");
     }
+
     const results = await this.insert<T>({
       table,
       data: data as Record<string, unknown>,
       returning: ["*"],
     });
+    
     if (!results || results.length === 0) {
       throw new Error("Insert returned no data");
     }
+    
     return results[0];
   }
 
   async update<T extends DatabaseRecord = DatabaseRecord>(
     payload: UpdatePayload
   ): Promise<T[]> {
+    if (!payload || !payload.table || !payload.data || !payload.where || payload.where.length === 0) {
+      throw new Error("Update payload with table, data, and where clause is required");
+    }
+
     try {
       const response = await this.http.post<T[]>(
         this.http.buildUrl(ENDPOINTS.database.update),
@@ -157,7 +182,8 @@ export class DatabaseClient {
       );
       return response.data || [];
     } catch (error) {
-      throw new Error(`Database update failed: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Database update failed: ${message}`);
     }
   }
 
@@ -169,16 +195,25 @@ export class DatabaseClient {
     if (!table || id === undefined || id === null || !data) {
       return null;
     }
-    const results = await this.update<T>({
-      table,
-      data: data as Record<string, unknown>,
-      where: [{ field: "id", operator: "eq", value: id }],
-      returning: ["*"],
-    });
-    return results?.[0] ?? null;
+
+    try {
+      const results = await this.update<T>({
+        table,
+        data: data as Record<string, unknown>,
+        where: [{ field: "id", operator: "eq", value: id }],
+        returning: ["*"],
+      });
+      return results?.[0] || null;
+    } catch (error) {
+      return null;
+    }
   }
 
   async delete(payload: DeletePayload): Promise<number> {
+    if (!payload || !payload.table || !payload.where || payload.where.length === 0) {
+      throw new Error("Delete payload with table and where clause is required");
+    }
+
     try {
       const response = await this.http.post<{ deleted: number }>(
         this.http.buildUrl(ENDPOINTS.database.delete),
@@ -186,7 +221,8 @@ export class DatabaseClient {
       );
       return response.data?.deleted ?? 0;
     } catch (error) {
-      throw new Error(`Database delete failed: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Database delete failed: ${message}`);
     }
   }
 
@@ -194,6 +230,7 @@ export class DatabaseClient {
     if (!table || id === undefined || id === null) {
       return false;
     }
+
     try {
       const deleted = await this.delete({
         table,
@@ -214,6 +251,14 @@ export class DatabaseClient {
         error_count: 0
       };
     }
+
+    for (let i = 0; i < operations.length; i++) {
+      const op = operations[i];
+      if (!op.operation || !op.payload) {
+        throw new Error(`Invalid operation at index ${i}: missing operation or payload`);
+      }
+    }
+
     try {
       const response = await this.http.post<BatchResult>(
         this.http.buildUrl(ENDPOINTS.database.batch),
@@ -226,7 +271,8 @@ export class DatabaseClient {
         error_count: 0
       };
     } catch (error) {
-      throw new Error(`Database batch operation failed: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Database batch operation failed: ${message}`);
     }
   }
 
@@ -234,6 +280,7 @@ export class DatabaseClient {
     if (!table) {
       return 0;
     }
+
     try {
       const result = await this.query({
         table,
@@ -241,8 +288,11 @@ export class DatabaseClient {
         where,
         limit: 1,
       });
+      
       const row = result?.rows?.[0] as Record<string, unknown>;
-      const count = row?.count !== undefined ? Number(row.count) : 0;
+      if (!row) return 0;
+      
+      const count = row.count !== undefined ? Number(row.count) : 0;
       return isNaN(count) ? 0 : count;
     } catch (error) {
       return 0;
@@ -250,9 +300,10 @@ export class DatabaseClient {
   }
 
   async exists(table: string, where: FilterClause[]): Promise<boolean> {
-    if (!table || !where) {
+    if (!table || !where || where.length === 0) {
       return false;
     }
+    
     const count = await this.count(table, where);
     return count > 0;
   }
@@ -278,3 +329,5 @@ export function createDatabaseClient(http: HttpClient): DatabaseClient {
   }
   return new DatabaseClient(http);
 }
+
+export type { DatabaseRecord };
