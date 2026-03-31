@@ -1,5 +1,6 @@
 import { HttpClient } from "../lib/http";
 import { Movie, Series, PaginatedResponse, SearchQuery } from "../lib/types";
+
 export interface XtrStudiosInfo {
     name: string;
     version: string;
@@ -10,6 +11,7 @@ export interface XtrStudiosInfo {
     supported_regions: string[];
     content_languages: string[];
 }
+
 export interface CatalogEntry {
     id: string | number;
     title: string;
@@ -21,6 +23,7 @@ export interface CatalogEntry {
     featured: boolean;
     new_release: boolean;
 }
+
 export interface FeaturedContent {
     hero: CatalogEntry;
     trending: CatalogEntry[];
@@ -28,10 +31,12 @@ export interface FeaturedContent {
     editors_picks: CatalogEntry[];
     genres: GenreSection[];
 }
+
 export interface GenreSection {
     genre: string;
     items: CatalogEntry[];
 }
+
 export interface Announcement {
     id: string;
     title: string;
@@ -42,6 +47,7 @@ export interface Announcement {
     url?: string;
     dismissible: boolean;
 }
+
 export interface MoviesClient {
     list(options?: {
         page?: number;
@@ -61,11 +67,34 @@ export interface MoviesClient {
     getGenres(): Promise<string[]>;
     getByImdbId(imdbId: string): Promise<Movie>;
 }
+
+export interface SeriesClient {
+    list(options?: {
+        page?: number;
+        limit?: number;
+        genre?: string;
+    }): Promise<PaginatedResponse<Series>>;
+    getById(id: string | number): Promise<Series>;
+    getPopular(options?: {
+        page?: number;
+        limit?: number;
+    }): Promise<PaginatedResponse<Series>>;
+    getTrending(options?: {
+        page?: number;
+        limit?: number;
+    }): Promise<PaginatedResponse<Series>>;
+    search(query: SearchQuery): Promise<PaginatedResponse<Series>>;
+    getGenres(): Promise<string[]>;
+    getByImdbId(imdbId: string): Promise<Series>;
+}
+
 export declare class XtrStudiosClient {
     private readonly http;
     readonly movies: MoviesClient;
+    readonly series: SeriesClient;
     constructor(http: HttpClient);
     private createMoviesClient;
+    private createSeriesClient;
     getInfo(): Promise<XtrStudiosInfo>;
     getCatalog(page?: number, limit?: number, type?: "movie" | "series"): Promise<PaginatedResponse<CatalogEntry>>;
     getFeatured(): Promise<FeaturedContent>;
@@ -80,5 +109,7 @@ export declare class XtrStudiosClient {
         latency: number;
     }>;
 }
+
 export declare function createXtrStudiosClient(http: HttpClient): XtrStudiosClient;
-//# sourceMappingURL=index.d.ts.map
+
+export type { Movie, Series, PaginatedResponse, SearchQuery };
