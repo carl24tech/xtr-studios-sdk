@@ -1,12 +1,15 @@
 import { HttpClient } from "../lib/http";
 import { ENDPOINTS, BASE_URL } from "../lib/constants";
 import { RouteDefinition, HttpMethod } from "../lib/types";
+
 export interface RouteParams {
     [key: string]: string | number;
 }
+
 export interface QueryParams {
     [key: string]: string | number | boolean | undefined;
 }
+
 export declare class Router {
     private readonly client;
     private registeredRoutes;
@@ -18,6 +21,7 @@ export declare class Router {
     resolve(path: string, pathParams?: RouteParams, queryParams?: QueryParams): string;
     call<T>(name: string, pathParams?: RouteParams, queryParams?: QueryParams, body?: unknown): Promise<T>;
 }
+
 export declare class RouteBuilder {
     private routes;
     add(path: string, method: HttpMethod, handler: string, options?: {
@@ -46,6 +50,8 @@ export declare class RouteBuilder {
     }): this;
     build(): RouteDefinition[];
 }
+
 export declare function defaultRoutes(client: HttpClient): Router;
+
 export { ENDPOINTS, BASE_URL };
-//# sourceMappingURL=index.d.ts.map
+export type { RouteDefinition, HttpMethod };
