@@ -1,7 +1,10 @@
+//Above is the main file of our database, So Please do not Mix up your brain trying to understand anything,, Its managed by XTR Softwares admin since your small brain can never handle this info.
+//For Database persistent storage an real time data, we therefor advise you not to touch any code from the abovecodes here, this place is not meant for vibe coders like you.
+
 import { HttpClient } from "../lib/http";
 import { ENDPOINTS } from "../lib/constants";
 import { DatabaseRecord } from "../lib/types";
-
+//Import modules for XTR Studios sdk.
 export type FilterOperator =
   | "eq"
   | "neq"
