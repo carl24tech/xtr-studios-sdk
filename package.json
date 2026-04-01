@@ -12,7 +12,7 @@
     "prepublishOnly": "npm run clean && npm run build"
   },
   "keywords": ["xtrstudios", "sdk", "streaming", "api"],
-  "author": "XtrStudios",
+  "author": "Xtr Studios",
   "license": "MIT",
   "devDependencies": {
     "typescript": "^5.4.0",
