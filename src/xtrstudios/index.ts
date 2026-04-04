@@ -82,13 +82,10 @@ export class XtrStudiosClient {
       },
 
       async getById(id) {
-        const url = http.buildUrl(MOVIE_ENDPOINTS.list) +
-          http.buildQueryString({ id });
-        const response = await http.get<PaginatedResponse<Movie>>(url);
-        if (response.data.results.length === 0) {
-          throw new Error(`Movie with ID ${id} not found`);
-        }
-        return response.data.results[0];
+        const path = MOVIE_ENDPOINTS.detail.replace(":id", String(id));
+        const url = http.buildUrl(path);
+        const response = await http.get<Movie>(url);
+        return response.data;
       },
 
       async getPopular(options = {}) {
@@ -176,7 +173,7 @@ export class XtrStudiosClient {
     series: PaginatedResponse<Series>;
   }> {
     const url =
-      this.http.buildUrl("/api/search") +
+      this.http.buildUrl(ENDPOINTS.search) +
       this.http.buildQueryString({
         q: query.q,
         page: query.page,
@@ -196,7 +193,7 @@ export class XtrStudiosClient {
 
   async ping(): Promise<{ pong: boolean; latency: number }> {
     const start = Date.now();
-    const url = this.http.buildUrl("/api/ping");
+    const url = this.http.buildUrl(ENDPOINTS.xtrstudios.health);
     await this.http.get(url);
     return { pong: true, latency: Date.now() - start };
   }
