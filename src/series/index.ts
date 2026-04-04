@@ -116,7 +116,7 @@ export class SeriesClient {
     seasonNumber: number
   ): Promise<Season> {
     const seasons = await this.getSeasons(seriesId);
-    const season = seasons.find((s) => s.number === seasonNumber);
+    const season = seasons.find((s) => s.season_number === seasonNumber);
     if (!season) {
       throw new Error(`Season ${seasonNumber} not found for series ${seriesId}`);
     }
@@ -128,8 +128,8 @@ export class SeriesClient {
     seasonNumber: number,
     episodeNumber: number
   ): Promise<Episode> {
-    const episodes = await this.getEpisodes(seriesId, seasonNumber);
-    const episode = episodes.results.find(
+    const response = await this.getEpisodes(seriesId, seasonNumber);
+    const episode = response.results.find(
       (e) => e.episode_number === episodeNumber
     );
     if (!episode) {
@@ -145,21 +145,21 @@ export class SeriesClient {
     currentSeasonNumber: number,
     currentEpisodeNumber: number
   ): Promise<Episode | null> {
-    const episodes = await this.getEpisodes(seriesId, currentSeasonNumber);
-    const nextInSeason = episodes.results.find(
+    const response = await this.getEpisodes(seriesId, currentSeasonNumber);
+    const nextInSeason = response.results.find(
       (e) => e.episode_number === currentEpisodeNumber + 1
     );
     if (nextInSeason) return nextInSeason;
 
     const seasons = await this.getSeasons(seriesId);
-    const nextSeason = seasons.find((s) => s.number === currentSeasonNumber + 1);
+    const nextSeason = seasons.find((s) => s.season_number === currentSeasonNumber + 1);
     if (!nextSeason) return null;
 
-    const nextSeasonEpisodes = await this.getEpisodes(
+    const nextSeasonResponse = await this.getEpisodes(
       seriesId,
-      nextSeason.number
+      nextSeason.season_number
     );
-    return nextSeasonEpisodes.results[0] ?? null;
+    return nextSeasonResponse.results[0] ?? null;
   }
 
   async getByImdbId(imdbId: string): Promise<Series> {
