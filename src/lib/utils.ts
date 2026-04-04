@@ -68,13 +68,11 @@ export function pick<T extends object, K extends keyof T>(
   obj: T,
   keys: K[]
 ): Pick<T, K> {
-  return keys.reduce(
-    (acc, key) => {
-      if (key in obj) acc[key] = obj[key];
-      return acc;
-    },
-    {} as Pick<T, K>
-  );
+  const result = {} as Pick<T, K>;
+  keys.forEach((key) => {
+    if (key in obj) result[key] = obj[key];
+  });
+  return result;
 }
 
 export function debounce<T extends (...args: unknown[]) => unknown>(
