@@ -29,9 +29,16 @@ export class XtrStudiosSDK {
 
   constructor(config: XtrClientConfig = {}) {
     this.http = new HttpClient({
-      baseUrl: BASE_URL,
-      ...config,
+      baseUrl: config.baseUrl ?? BASE_URL,
+      timeout: config.timeout,
+      headers: config.headers,
+      retries: config.retries,
+      retryDelay: config.retryDelay,
     });
+
+    if (config.apiKey) {
+      this.http.setApiKey(config.apiKey);
+    }
 
     this.stream = createStreamClient(this.http);
     this.series = createSeriesClient(this.http);
