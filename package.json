@@ -1,7 +1,7 @@
 {
   "name": "@xtrstudios/sdk",
   "version": "1.0.0",
-  "description": "Official  SDK for XtrStudios Platform",
+  "description": "Official SDK for XtrStudios Platform",
   "main": "dist/index.js",
   "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
@@ -12,7 +12,7 @@
     "prepublishOnly": "npm run clean && npm run build"
   },
   "keywords": ["xtrstudios", "sdk", "streaming", "api"],
-  "author": "Xtr Studios",
+  "author": "Carl William",
   "license": "MIT",
   "devDependencies": {
     "typescript": "^5.4.0",
@@ -20,5 +20,18 @@
   },
   "engines": {
     "node": ">=18.0.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xtr-studios-sdk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/xtr-studios-sdk/issues"
+  },
+  "homepage": "https://xtrstudios.site",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ]
 }
