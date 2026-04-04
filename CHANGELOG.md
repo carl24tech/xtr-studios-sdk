@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.2.Beta] - 2026-02-24
+## [1.2.Beta] - 2026-04-24
 
 ### Added
 - Initial release of the XtrStudios TypeScript SDK
