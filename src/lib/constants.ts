@@ -44,6 +44,8 @@ export const ENDPOINTS = {
     cancel: "/api/freemium/cancel",
     upgrade: "/api/freemium/upgrade",
     status: "/api/freemium/status",
+    coupons: "/api/freemium/coupons/validate",
+    invoices: "/api/freemium/invoices",
   },
   auth: {
     login: "/api/auth/login",
