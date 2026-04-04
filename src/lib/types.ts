@@ -1,8 +1,10 @@
 export type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
 export interface RequestOptions {
+  url?: string;
   method?: HttpMethod;
   headers?: Record<string, string>;
+  params?: Record<string, unknown>;
   body?: unknown;
   timeout?: number;
   signal?: AbortSignal;
@@ -75,7 +77,7 @@ export interface Series extends MediaItem {
 export interface Season {
   id: string | number;
   series_id: string | number;
-  number: number;
+  season_number: number;
   title?: string;
   episode_count: number;
   air_date?: string;
