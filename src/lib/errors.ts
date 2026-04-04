@@ -53,7 +53,7 @@ export class XtrValidationError extends XtrError {
 
 export class XtrTimeoutError extends XtrError {
   constructor(timeout: number) {
-    super(`Request timed out after ${timeout}ms`, "TIMEOUT", undefined);
+    super(`Request timed out after ${timeout}ms`, "TIMEOUT_ERROR", undefined);
     this.name = "XtrTimeoutError";
   }
 }
@@ -73,11 +73,15 @@ export function fromHttpStatus(status: number, message?: string, details?: unkno
   switch (status) {
     case 401:
       return new XtrAuthError(message);
+    case 403:
+      return new XtrError(message ?? "Forbidden", "FORBIDDEN", status, details);
     case 404:
       return new XtrNotFoundError(message ?? "Resource");
     case 429:
       return new XtrRateLimitError();
+    case 500:
+      return new XtrError(message ?? "Internal server error", "SERVER_ERROR", status, details);
     default:
-      return new XtrError(message ?? "An unexpected error occurred", "UNKNOWN", status, details);
+      return new XtrError(message ?? "An unexpected error occurred", "UNKNOWN_ERROR", status, details);
   }
 }
