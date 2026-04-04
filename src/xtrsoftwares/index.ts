@@ -113,7 +113,7 @@ export class XtrSoftwaresClient {
     osVersion: string
   ): Promise<PackageCompatibility> {
     const url =
-      this.http.buildUrl("/api/xtrsoftwares/compatibility") +
+      this.http.buildUrl(ENDPOINTS.xtrsoftwares.compatibility) +
       this.http.buildQueryString({
         package_id: packageId,
         platform,
@@ -173,13 +173,13 @@ export class XtrSoftwaresClient {
     type: ChangeItem["type"]
   ): Array<{ version: string; change: ChangeItem }> {
     const results: Array<{ version: string; change: ChangeItem }> = [];
-    entries.forEach((entry) => {
-      entry.changes
-        .filter((c) => c.type === type)
-        .forEach((change) => {
+    for (const entry of entries) {
+      for (const change of entry.changes) {
+        if (change.type === type) {
           results.push({ version: entry.version, change });
-        });
-    });
+        }
+      }
+    }
     return results;
   }
 }
