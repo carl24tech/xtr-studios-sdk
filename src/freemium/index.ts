@@ -92,7 +92,7 @@ export class FreemiumClient {
 
   async validateCoupon(code: string, planId?: string): Promise<CouponValidation> {
     const url =
-      this.http.buildUrl("/api/freemium/coupons/validate") +
+      this.http.buildUrl(ENDPOINTS.freemium.coupons) +
       this.http.buildQueryString({ code, plan_id: planId });
     const response = await this.http.get<CouponValidation>(url);
     return response.data;
@@ -110,7 +110,7 @@ export class FreemiumClient {
     total: number;
   }> {
     const url =
-      this.http.buildUrl("/api/freemium/invoices") +
+      this.http.buildUrl(ENDPOINTS.freemium.invoices) +
       this.http.buildQueryString({ page, limit });
     const response = await this.http.get<{
       invoices: Array<{
@@ -148,7 +148,7 @@ export class FreemiumClient {
     const p1QualityIdx = qualityOrder.indexOf(plan1.quality_limit);
     const p2QualityIdx = qualityOrder.indexOf(plan2.quality_limit);
 
-    const better = p1QualityIdx >= p2QualityIdx ? plan1 : plan2;
+    const better = p2QualityIdx > p1QualityIdx ? plan2 : plan1;
     const improvements: string[] = [];
 
     if (p2QualityIdx > p1QualityIdx) {
@@ -157,7 +157,7 @@ export class FreemiumClient {
     if (!plan2.ads && plan1.ads) {
       improvements.push("No ads");
     }
-    if (plan2.max_streams > plan1.max_streams || plan2.max_streams === -1) {
+    if (plan2.max_streams > plan1.max_streams) {
       improvements.push(
         plan2.max_streams === -1
           ? "Unlimited streams"
