@@ -21,8 +21,24 @@ const sdk = createClient({
   apiKey: 'YOUR_API_KEY',
 });
 
-const featured = await sdk.xtrstudios.getFeatured();
-const stream = await sdk.stream.getMovieStream({ id: 12345 });
+async function example() {
+  const featured = await sdk.xtrstudios.getFeatured();
+  console.log('Featured content:', featured);
+
+  const stream = await sdk.stream.getMovieStream({ id: '12345' });
+  console.log('Stream URL:', stream);
+
+  const popularMovies = await sdk.xtrstudios.movies.getPopular({ page: 1, limit: 10 });
+  console.log('Popular movies:', popularMovies.results);
+
+  const series = await sdk.series.getById('67890');
+  console.log('Series details:', series);
+
+  const freemiumStatus = await sdk.freemium.getStatus();
+  console.log('Subscription status:', freemiumStatus);
+}
+
+example().catch(console.error);
 ```
 
 ## Configuration
@@ -39,6 +55,19 @@ const sdk = new XtrStudiosSDK({
     'X-Custom-Header': 'value',
   },
 });
+
+async function configureAndUse() {
+  sdk.setHeader('X-Session-ID', 'session-123');
+  sdk.setApiKey('NEW_API_KEY');
+  
+  const ping = await sdk.xtrstudios.ping();
+  console.log('API latency:', ping.latency);
+  
+  const announcements = await sdk.xtrstudios.getAnnouncements();
+  console.log('Announcements:', announcements);
+}
+
+configureAndUse().catch(console.error);
 ```
 
 All requests point to `https://www.xtrstudios.site`.
@@ -52,23 +81,37 @@ All requests point to `https://www.xtrstudios.site`.
 General XtrStudios catalog and info.
 
 ```typescript
-const info       = await sdk.xtrstudios.getInfo();
-const catalog    = await sdk.xtrstudios.getCatalog(1, 20);
-const featured   = await sdk.xtrstudios.getFeatured();
-const notices    = await sdk.xtrstudios.getAnnouncements();
-const results    = await sdk.xtrstudios.search({ q: 'inception' });
-const latency    = await sdk.xtrstudios.ping();
+const info = await sdk.xtrstudios.getInfo();
+const catalog = await sdk.xtrstudios.getCatalog(1, 20);
+const featured = await sdk.xtrstudios.getFeatured();
+const notices = await sdk.xtrstudios.getAnnouncements();
+const results = await sdk.xtrstudios.search({ q: 'inception' });
+const latency = await sdk.xtrstudios.ping();
+
+console.log('Platform info:', info.name, info.version);
+console.log('Catalog total:', catalog.total_results);
+console.log('Featured hero:', featured.hero.title);
+console.log('Announcements count:', notices.length);
+console.log('Search results:', results.movies.total_results, 'movies,', results.series.total_results, 'series');
+console.log('Ping latency:', latency.latency, 'ms');
 ```
 
 ### `sdk.xtrstudios.movies`
 
 ```typescript
-const popular  = await sdk.xtrstudios.movies.getPopular({ page: 1 });
+const popular = await sdk.xtrstudios.movies.getPopular({ page: 1 });
 const trending = await sdk.xtrstudios.movies.getTrending();
-const movie    = await sdk.xtrstudios.movies.getById(550);
-const byImdb   = await sdk.xtrstudios.movies.getByImdbId('tt0137523');
-const found    = await sdk.xtrstudios.movies.search({ q: 'fight club' });
-const genres   = await sdk.xtrstudios.movies.getGenres();
+const movie = await sdk.xtrstudios.movies.getById(550);
+const byImdb = await sdk.xtrstudios.movies.getByImdbId('tt0137523');
+const found = await sdk.xtrstudios.movies.search({ q: 'fight club' });
+const genres = await sdk.xtrstudios.movies.getGenres();
+
+console.log('Popular movies:', popular.results.length);
+console.log('Trending movies:', trending.results.length);
+console.log('Movie by ID 550:', movie.title);
+console.log('Movie by IMDB ID tt0137523:', byImdb.title);
+console.log('Search found:', found.total_results, 'movies');
+console.log('Genres:', genres);
 ```
 
 ### `sdk.stream`
@@ -86,23 +129,39 @@ const seriesStream = await sdk.stream.getSeriesStream({
   options: { quality: '720p' },
 });
 
-const sources  = await sdk.stream.getSources(550, 'movie');
-const best     = sdk.stream.selectBestSource(sources, '1080p');
-const health   = await sdk.stream.checkHealth(sources);
+const sources = await sdk.stream.getSources(550, 'movie');
+const best = sdk.stream.selectBestSource(sources, '1080p');
+const health = await sdk.stream.checkHealth(sources);
 const filtered = sdk.stream.filterByFormat(sources, 'hls');
+
+console.log('Movie stream URL:', movieStream.url);
+console.log('Series stream URL:', seriesStream.url);
+console.log('Available sources:', sources.length);
+console.log('Best source for 1080p:', best?.quality);
+console.log('Healthy sources:', health.filter(h => h.available).length);
+console.log('HLS sources:', filtered.length);
 ```
 
 ### `sdk.series`
 
 ```typescript
-const series  = await sdk.series.list({ page: 1, genre: 'drama' });
-const show    = await sdk.series.getById(1399);
+const series = await sdk.series.list({ page: 1, genre: 'drama' });
+const show = await sdk.series.getById(1399);
 const seasons = await sdk.series.getSeasons(1399);
-const eps     = await sdk.series.getEpisodes(1399, 1);
-const ep      = await sdk.series.getEpisode(1399, 1, 1);
-const next    = await sdk.series.getNextEpisode(1399, 1, 1);
-const popular = await sdk.series.getPopular();
-const found   = await sdk.series.search({ q: 'breaking bad' });
+const eps = await sdk.series.getEpisodes(1399, 1);
+const ep = await sdk.series.getEpisode(1399, 1, 1);
+const next = await sdk.series.getNextEpisode(1399, 1, 1);
+const popularSeries = await sdk.series.getPopular();
+const foundSeries = await sdk.series.search({ q: 'breaking bad' });
+
+console.log('Series list:', series.total_results, 'series');
+console.log('Series by ID 1399:', show.title);
+console.log('Seasons count:', seasons.length);
+console.log('Episodes in season 1:', eps.total_results);
+console.log('Episode 1x1:', ep.title);
+console.log('Next episode:', next?.title);
+console.log('Popular series:', popularSeries.results.length);
+console.log('Search found:', foundSeries.total_results, 'series');
 ```
 
 ### `sdk.database`
