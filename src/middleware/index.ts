@@ -24,10 +24,9 @@ export class MiddlewarePipeline {
     const next = async (): Promise<void> => {
       if (index < this.handlers.length) {
         const handler = this.handlers[index++];
-        await handler({ ...ctx, next });
+        await handler(ctx);
       }
     };
-    ctx.next = next;
     await next();
   }
 
@@ -42,10 +41,10 @@ export function loggingMiddleware(
   return async (ctx: MiddlewareContext): Promise<void> => {
     const start = Date.now();
     const id = generateRequestId();
-    logger(`[XtrSDK] [${id}] Request started`);
+    logger(`[XtrSDK] [${id}] ${ctx.request.method ?? "GET"} ${ctx.request.url}`);
     await ctx.next();
     const duration = Date.now() - start;
-    logger(`[XtrSDK] [${id}] Request completed in ${duration}ms`);
+    logger(`[XtrSDK] [${id}] Completed in ${duration}ms`);
   };
 }
 
@@ -71,11 +70,13 @@ export function rateLimitMiddleware(
   return async (ctx: MiddlewareContext): Promise<void> => {
     const now = Date.now();
     const windowStart = now - windowMs;
-    const recentRequests = requests.filter((t) => t > windowStart);
+    while (requests.length > 0 && requests[0] < windowStart) {
+      requests.shift();
+    }
 
-    if (recentRequests.length >= maxRequests) {
+    if (requests.length >= maxRequests) {
       throw new Error(
-        `Rate limit: max ${maxRequests} requests per ${windowMs}ms exceeded`
+        `Rate limit exceeded: maximum ${maxRequests} requests per ${windowMs}ms`
       );
     }
 
@@ -94,7 +95,7 @@ export function cacheMiddleware(ttlMs = 60_000): MiddlewareHandler {
       return;
     }
 
-    const cacheKey = JSON.stringify(ctx.request);
+    const cacheKey = `${ctx.request.url}-${JSON.stringify(ctx.request.params)}`;
     const cached = cache.get(cacheKey);
 
     if (cached && cached.expires > Date.now()) {
@@ -117,20 +118,19 @@ export function retryMiddleware(
   maxRetries = 3,
   retryDelay = 1000
 ): MiddlewareHandler {
+  let attempt = 0;
   return async (ctx: MiddlewareContext): Promise<void> => {
-    let lastError: Error | undefined;
-    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    const execute = async (): Promise<void> => {
       try {
         await ctx.next();
-        return;
       } catch (err) {
-        lastError = err instanceof Error ? err : new Error(String(err));
-        if (attempt < maxRetries) {
-          await new Promise((r) => setTimeout(r, retryDelay * Math.pow(2, attempt)));
-        }
+        if (attempt >= maxRetries) throw err;
+        attempt++;
+        await new Promise((r) => setTimeout(r, retryDelay * Math.pow(2, attempt - 1)));
+        return execute();
       }
-    }
-    throw lastError;
+    };
+    return execute();
   };
 }
 
@@ -148,14 +148,17 @@ export function headerMiddleware(
 
 export function timeoutMiddleware(timeoutMs: number): MiddlewareHandler {
   return async (ctx: MiddlewareContext): Promise<void> => {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
-    const originalOptions = ctx.request as RequestOptions & { signal?: AbortSignal };
-    originalOptions.signal = controller.signal;
+    let timeoutId: ReturnType<typeof setTimeout>;
+    const timeoutPromise = new Promise((_, reject) => {
+      timeoutId = setTimeout(() => {
+        reject(new Error(`Request timeout after ${timeoutMs}ms`));
+      }, timeoutMs);
+    });
+
     try {
-      await ctx.next();
+      await Promise.race([ctx.next(), timeoutPromise]);
     } finally {
-      clearTimeout(timer);
+      clearTimeout(timeoutId);
     }
   };
 }
