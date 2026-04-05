@@ -1,10 +1,7 @@
-//Above is the main file of our database, So Please do not Mix up your brain trying to understand anything,, Its managed by XTR Softwares admin since your small brain can never handle this info.
-//For Database persistent storage an real time data, we therefor advise you not to touch any code from the abovecodes here, this place is not meant for vibe coders like you.
-
 import { HttpClient } from "../lib/http";
 import { ENDPOINTS } from "../lib/constants";
 import { DatabaseRecord } from "../lib/types";
-//Import modules for XTR Studios sdk.
+
 export type FilterOperator =
   | "eq"
   | "neq"
@@ -93,16 +90,11 @@ export class DatabaseClient {
       throw new Error("Query options with table name are required");
     }
 
-    try {
-      const response = await this.http.post<QueryResult<T>>(
-        this.http.buildUrl(ENDPOINTS.database.query),
-        options
-      );
-      return response.data || { rows: [], count: 0, has_more: false };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      throw new Error(`Database query failed: ${message}`);
-    }
+    const response = await this.http.post<QueryResult<T>>(
+      this.http.buildUrl(ENDPOINTS.database.query),
+      options
+    );
+    return response.data || { rows: [], count: 0, has_more: false };
   }
 
   async findOne<T extends DatabaseRecord = DatabaseRecord>(
@@ -113,12 +105,8 @@ export class DatabaseClient {
       return null;
     }
 
-    try {
-      const result = await this.query<T>({ table, where, limit: 1 });
-      return result?.rows?.[0] || null;
-    } catch (error) {
-      return null;
-    }
+    const result = await this.query<T>({ table, where, limit: 1 });
+    return result?.rows?.[0] || null;
   }
 
   async findById<T extends DatabaseRecord = DatabaseRecord>(
@@ -138,16 +126,11 @@ export class DatabaseClient {
       throw new Error("Insert payload with table and data is required");
     }
 
-    try {
-      const response = await this.http.post<T[]>(
-        this.http.buildUrl(ENDPOINTS.database.insert),
-        payload
-      );
-      return response.data || [];
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      throw new Error(`Database insert failed: ${message}`);
-    }
+    const response = await this.http.post<T[]>(
+      this.http.buildUrl(ENDPOINTS.database.insert),
+      payload
+    );
+    return response.data || [];
   }
 
   async insertOne<T extends DatabaseRecord = DatabaseRecord>(
@@ -178,16 +161,11 @@ export class DatabaseClient {
       throw new Error("Update payload with table, data, and where clause is required");
     }
 
-    try {
-      const response = await this.http.post<T[]>(
-        this.http.buildUrl(ENDPOINTS.database.update),
-        payload
-      );
-      return response.data || [];
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      throw new Error(`Database update failed: ${message}`);
-    }
+    const response = await this.http.post<T[]>(
+      this.http.buildUrl(ENDPOINTS.database.update),
+      payload
+    );
+    return response.data || [];
   }
 
   async updateById<T extends DatabaseRecord = DatabaseRecord>(
@@ -199,17 +177,13 @@ export class DatabaseClient {
       return null;
     }
 
-    try {
-      const results = await this.update<T>({
-        table,
-        data: data as Record<string, unknown>,
-        where: [{ field: "id", operator: "eq", value: id }],
-        returning: ["*"],
-      });
-      return results?.[0] || null;
-    } catch (error) {
-      return null;
-    }
+    const results = await this.update<T>({
+      table,
+      data: data as Record<string, unknown>,
+      where: [{ field: "id", operator: "eq", value: id }],
+      returning: ["*"],
+    });
+    return results?.[0] || null;
   }
 
   async delete(payload: DeletePayload): Promise<number> {
@@ -217,16 +191,11 @@ export class DatabaseClient {
       throw new Error("Delete payload with table and where clause is required");
     }
 
-    try {
-      const response = await this.http.post<{ deleted: number }>(
-        this.http.buildUrl(ENDPOINTS.database.delete),
-        payload
-      );
-      return response.data?.deleted ?? 0;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      throw new Error(`Database delete failed: ${message}`);
-    }
+    const response = await this.http.post<{ deleted: number }>(
+      this.http.buildUrl(ENDPOINTS.database.delete),
+      payload
+    );
+    return response.data?.deleted ?? 0;
   }
 
   async deleteById(table: string, id: string | number): Promise<boolean> {
@@ -234,15 +203,11 @@ export class DatabaseClient {
       return false;
     }
 
-    try {
-      const deleted = await this.delete({
-        table,
-        where: [{ field: "id", operator: "eq", value: id }],
-      });
-      return deleted > 0;
-    } catch (error) {
-      return false;
-    }
+    const deleted = await this.delete({
+      table,
+      where: [{ field: "id", operator: "eq", value: id }],
+    });
+    return deleted > 0;
   }
 
   async batch(operations: BatchOperation[]): Promise<BatchResult> {
@@ -262,21 +227,16 @@ export class DatabaseClient {
       }
     }
 
-    try {
-      const response = await this.http.post<BatchResult>(
-        this.http.buildUrl(ENDPOINTS.database.batch),
-        { operations }
-      );
-      return response.data || {
-        results: [],
-        errors: [],
-        success_count: 0,
-        error_count: 0
-      };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      throw new Error(`Database batch operation failed: ${message}`);
-    }
+    const response = await this.http.post<BatchResult>(
+      this.http.buildUrl(ENDPOINTS.database.batch),
+      { operations }
+    );
+    return response.data || {
+      results: [],
+      errors: [],
+      success_count: 0,
+      error_count: 0
+    };
   }
 
   async count(table: string, where?: FilterClause[]): Promise<number> {
@@ -284,22 +244,18 @@ export class DatabaseClient {
       return 0;
     }
 
-    try {
-      const result = await this.query({
-        table,
-        select: ["COUNT(*) as count"],
-        where,
-        limit: 1,
-      });
-      
-      const row = result?.rows?.[0] as Record<string, unknown>;
-      if (!row) return 0;
-      
-      const count = row.count !== undefined ? Number(row.count) : 0;
-      return isNaN(count) ? 0 : count;
-    } catch (error) {
-      return 0;
-    }
+    const result = await this.query({
+      table,
+      select: ["COUNT(*) as count"],
+      where,
+      limit: 1,
+    });
+    
+    const row = result?.rows?.[0] as Record<string, unknown>;
+    if (!row) return 0;
+    
+    const count = row.count !== undefined ? Number(row.count) : 0;
+    return isNaN(count) ? 0 : count;
   }
 
   async exists(table: string, where: FilterClause[]): Promise<boolean> {
