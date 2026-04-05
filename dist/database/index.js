@@ -8,13 +8,8 @@ class DatabaseClient {
         this.http = http;
     }
     async query(options) {
-        try {
-            const response = await this.http.post(this.http.buildUrl(constants_1.ENDPOINTS.database.query), options);
-            return response.data;
-        }
-        catch (error) {
-            throw new Error(`Database query failed: ${error.message}`);
-        }
+        const response = await this.http.post(this.http.buildUrl(constants_1.ENDPOINTS.database.query), options);
+        return response.data;
     }
     async findOne(table, where) {
         const result = await this.query({ table, where, limit: 1 });
@@ -70,20 +65,24 @@ class DatabaseClient {
     }
     async batch(operations) {
         if (!operations || operations.length === 0) {
-            return [];
+            return { results: [], errors: [], success_count: 0, error_count: 0 };
         }
         const CHUNK_SIZE = 100;
         if (operations.length > CHUNK_SIZE) {
-            const results = [];
+            const allResults = { results: [], errors: [], success_count: 0, error_count: 0 };
             for (let i = 0; i < operations.length; i += CHUNK_SIZE) {
                 const chunk = operations.slice(i, i + CHUNK_SIZE);
                 const response = await this.http.post(this.http.buildUrl(constants_1.ENDPOINTS.database.batch), { operations: chunk });
-                results.push(...(response.data || []));
+                const chunkResult = response.data || { results: [], errors: [], success_count: 0, error_count: 0 };
+                allResults.results.push(...chunkResult.results);
+                allResults.errors.push(...chunkResult.errors);
+                allResults.success_count += chunkResult.success_count;
+                allResults.error_count += chunkResult.error_count;
             }
-            return results;
+            return allResults;
         }
         const response = await this.http.post(this.http.buildUrl(constants_1.ENDPOINTS.database.batch), { operations });
-        return response.data || [];
+        return response.data || { results: [], errors: [], success_count: 0, error_count: 0 };
     }
     async count(table, where) {
         const result = await this.query({
