@@ -1,5 +1,6 @@
 import { HttpClient } from "../lib/http";
 import { SoftwarePackage } from "../lib/types";
+
 export interface PackageFilter {
     platform?: string;
     category?: string;
@@ -7,6 +8,7 @@ export interface PackageFilter {
     limit?: number;
     search?: string;
 }
+
 export interface ChangelogEntry {
     version: string;
     release_date: string;
@@ -15,11 +17,13 @@ export interface ChangelogEntry {
     upgrade_notes?: string;
     breaking_changes?: string[];
 }
+
 export interface ChangeItem {
     type: "feature" | "fix" | "improvement" | "security" | "deprecation";
     description: string;
     issue_url?: string;
 }
+
 export interface DownloadInfo {
     url: string;
     checksum: string;
@@ -29,6 +33,7 @@ export interface DownloadInfo {
     expires_at?: string;
     instructions: string[];
 }
+
 export interface PackageCompatibility {
     package_id: string;
     compatible: boolean;
@@ -36,6 +41,7 @@ export interface PackageCompatibility {
     min_os_versions: Record<string, string>;
     notes?: string;
 }
+
 export interface LatestReleases {
     packages: Array<SoftwarePackage & {
         is_new: boolean;
@@ -43,6 +49,7 @@ export interface LatestReleases {
     }>;
     total: number;
 }
+
 export declare class XtrSoftwaresClient {
     private readonly http;
     constructor(http: HttpClient);
@@ -73,5 +80,5 @@ export declare class XtrSoftwaresClient {
         change: ChangeItem;
     }>;
 }
+
 export declare function createXtrSoftwaresClient(http: HttpClient): XtrSoftwaresClient;
-//# sourceMappingURL=index.d.ts.map
