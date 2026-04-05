@@ -42,7 +42,7 @@ class XtrSoftwaresClient {
         return response.data;
     }
     async checkCompatibility(packageId, platform, osVersion) {
-        const url = this.http.buildUrl("/api/xtrsoftwares/compatibility") +
+        const url = this.http.buildUrl(constants_1.ENDPOINTS.xtrsoftwares.compatibility) +
             this.http.buildQueryString({
                 package_id: packageId,
                 platform,
@@ -76,13 +76,13 @@ class XtrSoftwaresClient {
     }
     filterChangesByType(entries, type) {
         const results = [];
-        entries.forEach((entry) => {
-            entry.changes
-                .filter((c) => c.type === type)
-                .forEach((change) => {
-                results.push({ version: entry.version, change });
-            });
-        });
+        for (const entry of entries) {
+            for (const change of entry.changes) {
+                if (change.type === type) {
+                    results.push({ version: entry.version, change });
+                }
+            }
+        }
         return results;
     }
 }
@@ -90,4 +90,3 @@ exports.XtrSoftwaresClient = XtrSoftwaresClient;
 function createXtrSoftwaresClient(http) {
     return new XtrSoftwaresClient(http);
 }
-//# sourceMappingURL=index.js.map
