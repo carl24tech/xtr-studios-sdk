@@ -112,7 +112,7 @@ export class FlutterClient {
     config: Partial<FlutterConfig>
   ): Promise<FlutterConfig> {
     const url = this.http.buildUrl(ENDPOINTS.flutter.config);
-    const response = await this.http.patch<FlutterConfig>(url, {
+    const response = await this.http.put<FlutterConfig>(url, {
       app_id: appId,
       ...config,
     });
@@ -121,8 +121,8 @@ export class FlutterClient {
 
   async getInstallGuide(pluginName: string): Promise<PluginInstallGuide> {
     const url =
-      this.http.buildUrl("/api/flutter/plugins/guide") +
-      this.http.buildQueryString({ name: pluginName });
+      this.http.buildUrl(ENDPOINTS.flutter.plugins) +
+      this.http.buildQueryString({ name: pluginName, guide: true });
     const response = await this.http.get<PluginInstallGuide>(url);
     return response.data;
   }
