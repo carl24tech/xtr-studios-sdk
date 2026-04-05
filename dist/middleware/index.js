@@ -31,10 +31,9 @@ class MiddlewarePipeline {
         const next = async () => {
             if (index < this.handlers.length) {
                 const handler = this.handlers[index++];
-                await handler({ ...ctx, next });
+                await handler(ctx);
             }
         };
-        ctx.next = next;
         await next();
     }
     count() {
@@ -46,10 +45,10 @@ function loggingMiddleware(logger = console.log) {
     return async (ctx) => {
         const start = Date.now();
         const id = (0, utils_1.generateRequestId)();
-        logger(`[XtrSDK] [${id}] Request started`);
+        logger(`[XtrSDK] [${id}] ${ctx.request.method ?? "GET"} ${ctx.request.url}`);
         await ctx.next();
         const duration = Date.now() - start;
-        logger(`[XtrSDK] [${id}] Request completed in ${duration}ms`);
+        logger(`[XtrSDK] [${id}] Completed in ${duration}ms`);
     };
 }
 function authMiddleware(getToken) {
@@ -69,9 +68,11 @@ function rateLimitMiddleware(maxRequests, windowMs) {
     return async (ctx) => {
         const now = Date.now();
         const windowStart = now - windowMs;
-        const recentRequests = requests.filter((t) => t > windowStart);
-        if (recentRequests.length >= maxRequests) {
-            throw new Error(`Rate limit: max ${maxRequests} requests per ${windowMs}ms exceeded`);
+        while (requests.length > 0 && requests[0] < windowStart) {
+            requests.shift();
+        }
+        if (requests.length >= maxRequests) {
+            throw new Error(`Rate limit exceeded: maximum ${maxRequests} requests per ${windowMs}ms`);
         }
         requests.push(now);
         await ctx.next();
@@ -85,7 +86,7 @@ function cacheMiddleware(ttlMs = 60000) {
             await ctx.next();
             return;
         }
-        const cacheKey = JSON.stringify(ctx.request);
+        const cacheKey = `${ctx.request.url}-${JSON.stringify(ctx.request.params)}`;
         const cached = cache.get(cacheKey);
         if (cached && cached.expires > Date.now()) {
             ctx.response = cached.data;
@@ -101,21 +102,20 @@ function cacheMiddleware(ttlMs = 60000) {
     };
 }
 function retryMiddleware(maxRetries = 3, retryDelay = 1000) {
+    let attempt = 0;
     return async (ctx) => {
-        let lastError;
-        for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        const execute = async () => {
             try {
                 await ctx.next();
-                return;
             }
             catch (err) {
-                lastError = err instanceof Error ? err : new Error(String(err));
-                if (attempt < maxRetries) {
-                    await new Promise((r) => setTimeout(r, retryDelay * Math.pow(2, attempt)));
-                }
+                if (attempt >= maxRetries) throw err;
+                attempt++;
+                await new Promise((r) => setTimeout(r, retryDelay * Math.pow(2, attempt - 1)));
+                return execute();
             }
-        }
-        throw lastError;
+        };
+        return execute();
     };
 }
 function headerMiddleware(headers) {
@@ -129,15 +129,17 @@ function headerMiddleware(headers) {
 }
 function timeoutMiddleware(timeoutMs) {
     return async (ctx) => {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), timeoutMs);
-        const originalOptions = ctx.request;
-        originalOptions.signal = controller.signal;
+        let timeoutId;
+        const timeoutPromise = new Promise((_, reject) => {
+            timeoutId = setTimeout(() => {
+                reject(new Error(`Request timeout after ${timeoutMs}ms`));
+            }, timeoutMs);
+        });
         try {
-            await ctx.next();
+            await Promise.race([ctx.next(), timeoutPromise]);
         }
         finally {
-            clearTimeout(timer);
+            clearTimeout(timeoutId);
         }
     };
 }
@@ -148,4 +150,3 @@ function createMiddlewareContext(request, metadata = {}) {
         metadata,
     };
 }
-//# sourceMappingURL=index.js.map
