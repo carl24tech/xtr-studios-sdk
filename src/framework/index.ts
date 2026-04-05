@@ -118,7 +118,20 @@ export class FrameworkClient {
     releaseNotes?: string;
   }> {
     const versionInfo = await this.getVersion();
-    const hasUpdate = versionInfo.latest_release !== SDK_VERSION;
+    const currentVersionParts = SDK_VERSION.split(".").map(Number);
+    const latestVersionParts = versionInfo.latest_release.split(".").map(Number);
+    
+    let hasUpdate = false;
+    for (let i = 0; i < Math.max(currentVersionParts.length, latestVersionParts.length); i++) {
+      const current = currentVersionParts[i] || 0;
+      const latest = latestVersionParts[i] || 0;
+      if (latest > current) {
+        hasUpdate = true;
+        break;
+      }
+      if (latest < current) break;
+    }
+    
     return {
       hasUpdate,
       current: SDK_VERSION,
@@ -127,25 +140,27 @@ export class FrameworkClient {
   }
 
   async getEnvironment(): Promise<EnvironmentConfig> {
-    const url = this.http.buildUrl("/api/framework/environment");
+    const url = this.http.buildUrl(ENDPOINTS.framework.environment);
     const response = await this.http.get<EnvironmentConfig>(url);
     return response.data;
   }
 
   async getPlugins(): Promise<FrameworkPlugin[]> {
-    const url = this.http.buildUrl("/api/framework/plugins");
+    const url = this.http.buildUrl(ENDPOINTS.framework.plugins);
     const response = await this.http.get<FrameworkPlugin[]>(url);
     return response.data;
   }
 
   async enablePlugin(pluginId: string): Promise<FrameworkPlugin> {
-    const url = this.http.buildUrl(`/api/framework/plugins/${pluginId}/enable`);
+    const url = this.http.buildUrl(ENDPOINTS.framework.plugins) +
+      this.http.buildQueryString({ action: "enable", id: pluginId });
     const response = await this.http.post<FrameworkPlugin>(url);
     return response.data;
   }
 
   async disablePlugin(pluginId: string): Promise<FrameworkPlugin> {
-    const url = this.http.buildUrl(`/api/framework/plugins/${pluginId}/disable`);
+    const url = this.http.buildUrl(ENDPOINTS.framework.plugins) +
+      this.http.buildQueryString({ action: "disable", id: pluginId });
     const response = await this.http.post<FrameworkPlugin>(url);
     return response.data;
   }
