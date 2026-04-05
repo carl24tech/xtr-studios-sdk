@@ -10,6 +10,7 @@ import { XtrStudiosClient } from "./xtrstudios";
 import { XtrSoftwaresClient } from "./xtrsoftwares";
 import { Router } from "./routes";
 import { MiddlewarePipeline } from "./middleware";
+
 export declare class XtrStudiosSDK {
     private readonly http;
     readonly stream: StreamClient;
@@ -29,7 +30,9 @@ export declare class XtrStudiosSDK {
     getBaseUrl(): string;
     getHttpClient(): HttpClient;
 }
+
 export declare function createClient(config?: XtrClientConfig): XtrStudiosSDK;
+
 export { BASE_URL } from "./lib/constants";
 export * from "./lib/types";
 export * from "./lib/errors";
@@ -46,5 +49,5 @@ export * from "./xtrstudios";
 export * from "./xtrsoftwares";
 export * from "./routes";
 export * from "./middleware";
+
 export default XtrStudiosSDK;
-//# sourceMappingURL=index.d.ts.map
