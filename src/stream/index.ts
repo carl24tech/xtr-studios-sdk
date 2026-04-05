@@ -61,9 +61,7 @@ export class StreamClient {
     const url = this.http.buildUrl(ENDPOINTS.stream.movie) +
       this.http.buildQueryString({
         id: request.id,
-        quality: request.options?.quality,
-        format: request.options?.format,
-        language: request.options?.language,
+        ...request.options,
       });
 
     const response = await this.http.get<StreamResult>(url);
@@ -78,9 +76,7 @@ export class StreamClient {
         id: request.id,
         season: request.season,
         episode: request.episode,
-        quality: request.options?.quality,
-        format: request.options?.format,
-        language: request.options?.language,
+        ...request.options,
       });
 
     const response = await this.http.get<StreamResult>(url);
@@ -93,9 +89,7 @@ export class StreamClient {
     const url = this.http.buildUrl(ENDPOINTS.stream.episode) +
       this.http.buildQueryString({
         episode_id: request.episodeId,
-        quality: request.options?.quality,
-        format: request.options?.format,
-        language: request.options?.language,
+        ...request.options,
       });
 
     const response = await this.http.get<StreamResult>(url);
@@ -129,12 +123,14 @@ export class StreamClient {
       const start = Date.now();
       try {
         const controller = new AbortController();
-        setTimeout(() => controller.abort(), 5_000);
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
 
         const res = await fetch(source.url, {
           method: "HEAD",
           signal: controller.signal,
         });
+
+        clearTimeout(timeoutId);
 
         return {
           url: source.url,
@@ -210,7 +206,7 @@ export class StreamClient {
     }
     return {
       ...result,
-      preferred: this.selectBestSource(result.sources),
+      preferred: this.selectBestSource(result.sources, "1080p"),
     };
   }
 
