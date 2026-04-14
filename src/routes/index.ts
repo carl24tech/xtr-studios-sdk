@@ -1,3 +1,4 @@
+//A modern SDK Package that boots XTR Studios server and all the streaming features, all movies and also series,Allows other developers to install this npm package in their apps/webs for easy integrations, and also Automated Updates from the original Developer Account with the npm/
 import { HttpClient } from "../lib/http";
 import { ENDPOINTS, BASE_URL } from "../lib/constants";
 import { RouteDefinition, HttpMethod } from "../lib/types";
