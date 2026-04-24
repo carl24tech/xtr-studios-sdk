@@ -1,3 +1,6 @@
+//----////---/////
+
+
 export declare const BASE_URL = "https://www.xtrstudios.site";
 export declare const API_VERSION = "v1";
 export declare const DEFAULT_TIMEOUT = 30000;
