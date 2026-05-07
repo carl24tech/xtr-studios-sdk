@@ -78,67 +78,124 @@ export class FlutterClient {
   async getPlugins(
     platform?: "android" | "ios" | "web" | "desktop"
   ): Promise<FlutterPlugin[]> {
-    const url =
-      this.http.buildUrl(ENDPOINTS.flutter.plugins) +
-      (platform ? this.http.buildQueryString({ platform }) : "");
-    const response = await this.http.get<FlutterPlugin[]>(url);
-    return response.data;
+    try {
+      const queryParams = platform ? { platform } : {};
+      const url = this.http.buildUrl(
+        ENDPOINTS.flutter.plugins,
+        queryParams
+      );
+      const response = await this.http.get<FlutterPlugin[]>(url);
+      return response.data;
+    } catch (error) {
+      console.error("Failed to fetch plugins:", error);
+      throw error;
+    }
   }
 
   async getConfig(appId: string): Promise<FlutterConfig> {
-    const url =
-      this.http.buildUrl(ENDPOINTS.flutter.config) +
-      this.http.buildQueryString({ app_id: appId });
-    const response = await this.http.get<FlutterConfig>(url);
-    return response.data;
+    try {
+      const url = this.http.buildUrl(
+        ENDPOINTS.flutter.config,
+        { app_id: appId }
+      );
+      const response = await this.http.get<FlutterConfig>(url);
+      return response.data;
+    } catch (error) {
+      console.error(`Failed to fetch config for app ${appId}:`, error);
+      throw error;
+    }
   }
 
   async getAssets(version?: string): Promise<FlutterAsset[]> {
-    const url =
-      this.http.buildUrl(ENDPOINTS.flutter.assets) +
-      (version ? this.http.buildQueryString({ version }) : "");
-    const response = await this.http.get<FlutterAsset[]>(url);
-    return response.data;
+    try {
+      const queryParams = version ? { version } : {};
+      const url = this.http.buildUrl(
+        ENDPOINTS.flutter.assets,
+        queryParams
+      );
+      const response = await this.http.get<FlutterAsset[]>(url);
+      return response.data;
+    } catch (error) {
+      console.error("Failed to fetch assets:", error);
+      throw error;
+    }
   }
 
   async getManifest(): Promise<FlutterManifest> {
-    const url = this.http.buildUrl(ENDPOINTS.flutter.manifest);
-    const response = await this.http.get<FlutterManifest>(url);
-    return response.data;
+    try {
+      const url = this.http.buildUrl(ENDPOINTS.flutter.manifest);
+      const response = await this.http.get<FlutterManifest>(url);
+      return response.data;
+    } catch (error) {
+      console.error("Failed to fetch manifest:", error);
+      throw error;
+    }
   }
 
   async updateConfig(
     appId: string,
     config: Partial<FlutterConfig>
   ): Promise<FlutterConfig> {
-    const url = this.http.buildUrl(ENDPOINTS.flutter.config);
-    const response = await this.http.put<FlutterConfig>(url, {
-      app_id: appId,
-      ...config,
-    });
-    return response.data;
+    try {
+      const validationErrors = this.validateConfig({ app_id: appId, ...config });
+      if (validationErrors.length > 0) {
+        throw new Error(`Invalid config: ${validationErrors.join(", ")}`);
+      }
+      
+      const url = this.http.buildUrl(ENDPOINTS.flutter.config);
+      const response = await this.http.put<FlutterConfig>(url, {
+        app_id: appId,
+        ...config,
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Failed to update config for app ${appId}:`, error);
+      throw error;
+    }
   }
 
   async getInstallGuide(pluginName: string): Promise<PluginInstallGuide> {
-    const url =
-      this.http.buildUrl(ENDPOINTS.flutter.plugins) +
-      this.http.buildQueryString({ name: pluginName, guide: true });
-    const response = await this.http.get<PluginInstallGuide>(url);
-    return response.data;
+    try {
+      if (!pluginName || pluginName.trim() === "") {
+        throw new Error("Plugin name is required");
+      }
+      
+      const url = this.http.buildUrl(
+        ENDPOINTS.flutter.plugins,
+        { name: pluginName, guide: true }
+      );
+      const response = await this.http.get<PluginInstallGuide>(url);
+      return response.data;
+    } catch (error) {
+      console.error(`Failed to fetch install guide for plugin ${pluginName}:`, error);
+      throw error;
+    }
   }
 
   generatePubspecEntry(plugin: FlutterPlugin): string {
+    if (!plugin?.name || !plugin?.version) {
+      throw new Error("Plugin must have both name and version");
+    }
     return `  ${plugin.name}: ^${plugin.version}`;
   }
 
   generateInitCode(config: FlutterConfig): string {
-    return [
-      `XtrStudiosSDK.initialize(`,
-      `  apiKey: 'YOUR_API_KEY',`,
-      `  baseUrl: '${config.api_base_url}',`,
-      `  appId: '${config.app_id}',`,
-      `);`,
-    ].join("\n");
+    if (!config?.api_base_url || !config?.app_id) {
+      throw new Error("Config must have api_base_url and app_id");
+    }
+    
+    return `import 'package:xtr_studios_sdk/xtr_studios_sdk.dart';
+
+void initializeXTRStudios() {
+  XtrStudiosSDK.initialize(
+    apiKey: 'YOUR_API_KEY',
+    baseUrl: '${config.api_base_url}',
+    appId: '${config.app_id}',
+  );
+}
+
+// Call this method in your main.dart
+// initializeXTRStudios();`;
   }
 
   getDefaultPlayerConfig(): PlayerConfig {
@@ -172,8 +229,31 @@ export class FlutterClient {
     if (!config.version) errors.push("version is required");
     return errors;
   }
+
+  // Helper method to merge configs
+  mergeConfigs(base: FlutterConfig, overrides: Partial<FlutterConfig>): FlutterConfig {
+    return {
+      ...base,
+      ...overrides,
+      player_config: { ...base.player_config, ...overrides.player_config },
+      theme: { ...base.theme, ...overrides.theme },
+      features: { ...base.features, ...overrides.features },
+    };
+  }
+
+  // Helper method to validate manifest
+  validateManifest(manifest: FlutterManifest): boolean {
+    if (!manifest.version) return false;
+    if (!manifest.min_flutter_version) return false;
+    if (!Array.isArray(manifest.plugins)) return false;
+    if (!Array.isArray(manifest.assets)) return false;
+    return true;
+  }
 }
 
 export function createFlutterClient(http: HttpClient): FlutterClient {
+  if (!http) {
+    throw new Error("HttpClient is required to create FlutterClient");
+  }
   return new FlutterClient(http);
 }
